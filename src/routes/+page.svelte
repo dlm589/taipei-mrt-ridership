@@ -1,27 +1,20 @@
 <script>
     //import TopSofC from "../lib/TopSofC.svelte";
     import LineChart from "../lib/line-chart.svelte";
+    import MonthlyLineChart from "../lib/monthly-line-chart.svelte";
+    import jsondata from "../python/data-json/2023-ridership.json"; // import data
     import "../assets/global-styles.css";
+    import { json } from "@sveltejs/kit";
     //import sofcLongCity from "../assets/sofc-long-city.svg";
 
     let transitName = "淡水信義線";
-    var variableName = "Population";
+    var variableName = "平均進站人數";
+    let stationName = "台北車站"
 
-    var censusItems = [
-        "Population",
-        "Weighted Average Total Individual Income",
-        "Weighted Average Total Household Income",
-        "Total Occupied Dwellings",
-        "Single-detached house",
-        "Semi-detached house",
-        "Row house",
-        "Apartment or flat in a -plex*",
-        "Apartment fewer than five storeys",
-        "Apartment five or more storeys",
-        // "Weighted Average number of rooms per dwelling",
-        // "Owner",
-        // "Renter",
-        // "Owner Renter Ratio",
+    /*Drop down for first chart*/
+    var exit_or_enter = [
+        "平均出站人數",
+        "平均進站人數"
     ];
 
     var transit_lines = [
@@ -30,31 +23,52 @@
         "中和新蘆線",
         "板南線",
         "環狀線",
-        "新北投支線",
-        "小碧潭支線",
         "文湖線",
     ];
+
+    // conversion json for selected dropdown
+    const exitEnter = {
+        "平均出站人數": "exit",
+        "平均進站人數": "enter"
+    }
+
     function handleTransitChange(event) {
         const selectedValue = event.target.value;
         console.log(selectedValue);
         transitName = selectedValue;
         //selectedVariable.set(selectedValue);
     }
-    function handleCensusChange(event) {
+    function handleCountChange(event) {
         const selectedValue = event.target.value;
         //console.log(selectedValue);
         variableName = selectedValue;
+        console.log(variableName)
         //selectedVariable.set(selectedValue);
     }
+
+    /*Drop down for second chart*/
+    var stationList = []
+    for (let i =0; i< jsondata.length; i++){
+        stationList.push(jsondata[i].Station)
+    }
+    function handleStationChange(event) {
+        const selectedValue = event.target.value;
+        console.log(selectedValue);
+        stationName = selectedValue;
+        //selectedVariable.set(selectedValue);
+    }
+
+    
+    
     const lineColour = {
-      "淡水信義線": "#e3002c",
-      "松山新店線": "#008659",
-      "中和新蘆線": "#f8b61c",
-      "板南線": "#0070bd",
-      "環狀線": "#ffdb00",
-      "新北投支線": "#fd92a3",
-      "小碧潭支線": "#cfdb00",
-      "文湖線": "#c48c31"
+        淡水信義線: "#e3002c",
+        松山新店線: "#008659",
+        中和新蘆線: "#f8b61c",
+        板南線: "#0070bd",
+        環狀線: "#ffdb00",
+        新北投支線: "#fd92a3",
+        小碧潭支線: "#cfdb00",
+        文湖線: "#c48c31",
     };
 
     let topWidth = 200;
@@ -129,9 +143,9 @@
             <select
                 id="census"
                 value={variableName}
-                on:change={handleCensusChange}
+                on:change={handleCountChange}
             >
-                {#each censusItems as value}
+                {#each exit_or_enter as value}
                     <option {value}>{value}</option>
                 {/each}
             </select>
@@ -142,12 +156,20 @@
             within an <b>800m</b> distance from each point on the
             <b>{transitName}</b>
         </p>
+        <svg class="legend" height="30px" width={600}>
+            <line class="dashed-lines" x1="10px" y1="15" x2="60px" y2="15"
+            ></line>
+            <text x="70px" y="20" font-size="14" fill="white">1996 Census</text>
+            <line class="lines" x1="190px" y1="15" x2="240px" y2="15"></line>
+            <text x="250px" y="20" font-size="14" fill="white">2021 Census</text
+            >
+        </svg>
     </div>
 
     <!-- key is a function that would destroy the element and rebuilt it upon variable change-->
     {#key [transitName, variableName]}
         <div class="chart">
-            <LineChart transitName={transitName} ridershiptype={"exit"} />
+            <LineChart {transitName} ridershiptype={exitEnter[variableName]} />
         </div>
     {/key}
 
@@ -172,6 +194,25 @@
             people can live, work, and play.
 
             <br />
+            </p>
+        <p>
+            <select
+                id="transit"
+                value={stationName}
+                on:change={handleStationChange}
+            >
+                {#each stationList as value}
+                    <option {value}>{value}</option>
+                {/each}
+            </select>
+        </p>
+
+        {#key [stationName]}
+        <div class="chart">
+            <MonthlyLineChart stationName = {stationName} />
+        </div>
+        {/key}
+        <p>
             <br /><b>What is the benefit of TOD? </b><br />
 
             TOD allows people to reduce their reliance on cars for many errands.
@@ -258,5 +299,30 @@
         background-color: none;
         margin: 0 auto;
         position: relative;
+    }
+    .legend {
+        position: relative;
+        max-width: 1000px;
+        min-width: 500px;
+        top: 10px;
+        margin: 0 auto;
+    }
+
+    .dashed-lines {
+        position: relative;
+        stroke: white;
+        margin: 0 auto;
+        stroke-dasharray: 6 3;
+        margin-bottom: 10px;
+        padding-bottom: 20px;
+        stroke-width: 5px;
+    }
+    .lines {
+        position: relative;
+        margin: 0 auto;
+        stroke: white;
+        margin-bottom: 10px;
+        padding-bottom: 20px;
+        stroke-width: 5px;
     }
 </style>

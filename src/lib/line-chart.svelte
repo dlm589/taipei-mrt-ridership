@@ -6,20 +6,18 @@
    /*
     export let mon; //get the selected variable name for 2021
     export let tue; //get the selected variable name for 2021
-    export let colour96; // set colour for 1996
-    export let colour21; // set colour for 2021
+    export let colour96; // set lineColour[transitName] for 1996
+    export let colour21; // set lineColour[transitName] for 2021
     export let transitName;
     */
     export let transitName
     export let ridershiptype
-    let mon = `Monday-${ridershiptype}`
-    let tue = `Tuesday-${ridershiptype}`
-    let wed = `Wednesday-${ridershiptype}`
-    let thu = `Thursday-${ridershiptype}`
-    let fri = `Friday-${ridershiptype}`
+
+    let avg = `Average-${ridershiptype}`
     let sat = `Saturday-${ridershiptype}`
     let sun = `Sunday-${ridershiptype}`
-  
+    console.log(sun)
+    
     const lineColour = {
       "淡水信義線": "#e3002c",
       "松山新店線": "#008659",
@@ -37,8 +35,6 @@
     function filterDesignation(jsondata) {
       return jsondata["Route"] === transitName;
     }
-    console.log(transitName)
-    console.log(lineColour[transitName])
     // store filtered jsondata in variable called data
     var data = jsondata.filter(filterDesignation);
   
@@ -62,7 +58,7 @@
     // ------ SETTING UP X AXIS ------------------------
     // round the numbers for creating xTicks,
     // create xticks using the newMax values
-    var xTicks = [5000, 10000, 20000, 30000, 40000, 50000, 60000, 70000, 150000];
+    var xTicks = [0, 5000, 10000, 20000, 30000, 40000, 50000, 60000, 70000, 150000];
   
     // converts thousands and million to K and M i.e. (1,000 ==> 1K , 1,000,000 ==> 1M)
     function thousandToK(tick) {
@@ -92,8 +88,9 @@
     $: yScale = scaleLinear()
       .domain([0, yTicks.length])
       .range([padding.top + 10, height - padding.bottom - 2 * barWidth]); // added 0.2*height to accomodate station text label.
-  
+    
     /* ==== SCALING THE LINES === */
+    /*
     $: line_gen96 = line()
       .curve(curveNatural)
       .x((d) => xScale(d[mon]))
@@ -101,9 +98,9 @@
   
     $: line_gen21 = line()
       .curve(curveNatural)
-      .x((d) => xScale(d[sat]))
+      .x((d) => xScale(d[sun]))
       .y((d, i) => yScale(i) + barPadding + padding.top)(data);
-  
+    */
     /* ======= SET UP DATA LABELLING ========== */
     let selected_datapoint = undefined;
     let selected_datapoint_i = undefined;
@@ -147,8 +144,9 @@
             </g>
         {/each}
       </g>
+      <!--
       <path d={line_gen96} stroke={"white"} stroke-dasharray="6 3" />
-      <path d={line_gen21} stroke={"white"} />
+      <path d={line_gen21} stroke={"white"} />-->
       <!-- CREATE THE LINES ON THE LINE GRAPH-->
   
       {#each data as point, i}
@@ -234,7 +232,7 @@
   
       <!-- CREATE STATION TICKS AND LABELS-->
   
-      {#each data as point, i}
+      
         <!-- CREATE THE BARS ON THE LINE GRAPH-->
         <!-- <rect
           class="barLight"
@@ -275,27 +273,8 @@
           width={500}
           height={barPadding + 3 * barWidth}
           opacity="0"
-        />
-        <text
-          id={`var-text-${i}`}
-          class="var-text"
-          x={padding.left + innerWidth}
-          y={yScale(i) + barPadding + padding.top + 5}
-          >
-          <tspan
-            x={[xScale(Math.max(point[tue])) + 5]}
-                      dy={-8}
-            fill={lineColour[transitName]}
-            >{"1996: " + Math.round(point[mon] * 100) / 100}</tspan
-          >
-          <tspan
-            x={xScale(Math.max(point[tue])) + 5}
-            dy={15}
-            fill={lineColour[transitName]}
-            >{"2021: " + Math.round(point[tue] * 100) / 100}</tspan
-          >
-        </text> -->
-      {/each}
+        /> -->
+        
   
       <!-- Line that marks the location of the station-->
       <g class="station-lines">
@@ -320,10 +299,78 @@
               stroke={lineColour[transitName]}
               fill="#FFFFFF"
             />
-            {console.log(lineColour[transitName])}
   
         {/each}
       </g>
+      <g>
+        {#each data as point, i}
+            {#if i > 0 && point[avg] !== null && data[i - 1][avg] !== null}
+                <line
+                    x1={xScale(data[i - 1][avg])}
+                    y1={yScale(i - 1) + padding.top}
+                    x2={xScale(point[avg])}
+                    y2={yScale(i) + padding.top}
+                    stroke={lineColour[transitName]}
+                    stroke-width="3"
+                />
+            {/if}
+
+            {#if point[avg] !== null}
+                <circle
+                    class="point"
+                    r={innerWidth / 200}
+                    cx={xScale(point[avg])}
+                    cy={yScale(i) + padding.top}
+                    fill={lineColour[transitName]}
+                    on:mouseover={(event) => {
+                        selected_datapoint = point;
+                        selected_datapoint_i = i;
+                        setMousePosition(event);
+                    }}
+                    on:mouseout={() => {
+                        selected_datapoint = undefined;
+                    }}
+                />
+                <rect
+                    class="barLight"
+                    x={xScale(0)}
+                    y={yScale(i) + padding.top/2}
+                    height={barWidth - 2}
+                    width={width - padding.left}
+                    stroke={"white"}
+                    opacity="0.1"
+                    on:mouseover={(event) => {
+                        selected_datapoint = point;
+                        //setMousePosition(event);
+                        selected_datapoint_i = i;
+                        document.querySelector(`#var-text-${i}`).style.opacity = 1;
+                    }}
+                    on:mouseout={(event) => {
+                      selected_datapoint = point;
+                      //setMousePosition(event);
+                      selected_datapoint_i = i;
+                      document.querySelector(`#var-text-${i}`).style.opacity = 0;
+                  }}
+                />
+            {/if}
+        {/each}
+        {#each data as point, i}
+        <text
+          id={`var-text-${i}`}
+          class="var-text"
+          x={padding.left + innerWidth}
+          y={yScale(i) + barPadding + padding.top + 5}
+          >
+          <tspan
+            x={[xScale(Math.max(point[avg])) + 20]}
+            dy={-1}
+            fill={"white"}
+            >{Math.round(point[avg])}</tspan
+          >
+
+        </text>
+      {/each}
+    </g>
     </svg>
   </div>
   
@@ -395,13 +442,15 @@
   
     /* BAR GRAPH */
     .barLight {
+      opacity: 0;
       z-index: -5;
     }
   
     .barLight:hover {
-      opacity: 0;
+      opacity: 1;
+      fill-opacity: 0;
       cursor: pointer;
-      z-index: 1;
+      z-index: 6;
     }
   
     /* HOVERING */
